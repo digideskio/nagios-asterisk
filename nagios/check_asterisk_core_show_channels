@@ -1,0 +1,44 @@
+!/bin/bash
+
+#Ejemplo de uso
+./check_asterisk_core_show_channels 30 50
+
+llamadas=`/usr/sbin/asterisk -rx "core show channels" | grep active\ call|cut -d" " -f1`
+if [ $# == 0 ]; then
+echo "OK:$llamadas llamadas simultaneas|llamadas=$llamadas"
+ exit 0
+fi
+if [ "$1" == "-h" -o "$1" == "--help" ]; then
+echo "Ayuda"
+echo "La sintaxis correcta es:"
+echo "$0 [XX] [YY]"
+echo "XX es el valor de umbral de alerta warning"
+echo "YY es el valor de umbral de alerta critical"
+exit 3
+elif [ -z "$llamadas" ]; then
+ echo "ERROR:Existe un error, puede que la ruta de asterisk se incorrecta o la version no sea
+compatible"
+exit 3
+fi
+if [ -n "$2" ];then
+if [ "$1" -gt "$2" ];then
+ echo "ERROR:Error de Sintaxis, umbral WARNING debe menor o igual al umbral CRITICAL"
+ echo "$0 $1 $2"
+exit 2
+ fi
+if [ "$llamadas" -ge $1 -a "$llamadas" -lt $2 ];then
+echo "WARNING:$llamadas llamadas simultaneas|llamadas=$llamadas"
+exit 2
+fi
+if [ "$llamadas" -ge "$2" ];then
+ echo "CRITICAL:$llamadas llamadas simultaneas|llamadas=$llamadas"
+ exit 2
+fi
+elif [ "$llamadas" -ge "$1" ];then
+ echo "WARNING:$llamadas llamadas simultaneas|llamadas=$llamadas"
+ exit 2
+fi
+if [ "$llamadas" -lt "$1" ];then
+ echo "OK:$llamadas simultaneas|llamadas=$llamadas"
+ exit 0
+fi
