@@ -1,0 +1,50 @@
+#!/bin/bash
+
+#Ejemplo uso
+#./check_asterisk_queue_show 600 40 80
+
+#Salida de consola
+#600 has 1 calls (max unlimited) in 'leastrecent' strategy (3s holdtime, 654s talktime), W:0, C:15, A:5, SL:93.3% within 60s
+#   Members:
+#      Marco Esquivel (Local/2406@from-queue/n from hint:2406@ext-local) with penalty 2 (ringinuse disabled) (dynamic) (Not in use) has taken 1 calls (last was 4531 secs ago)
+#      Tiago Diniz (Local/2421@from-queue/n from hint:2421@ext-local) with penalty 1 (ringinuse disabled) (dynamic) (In use) has taken 4 calls (last was 3183 secs ago)
+#      Marcio Souza (Local/2419@from-queue/n from hint:2419@ext-local) with penalty 1 (ringinuse disabled) (dynamic) (Not in use) has taken 6 calls (last was 129 secs ago)
+#   Callers:
+#      1. SIP/102324-00000062 (wait: 0:05, prio: 0)
+
+llamadas=`/usr/sbin/asterisk -rx "queue show $1" | grep wait | wc -l`
+
+if [ $# == 0 -o "$1" == "-h" -o $# -gt 3 -o -z "$2" ]; then
+ echo "ERROR:Sintaxis incorrecta"
+echo "La sintaxis correcta es:"
+ echo "$0 ZZZZ XX [YY]"
+ echo "ZZZ es el nombre de la cola"
+echo "XX es el valor de umbral de alerta warning"
+echo "YY es el valor de umbral de alerta critical"
+ exit 3
+elif [ -z "$llamadas" ]; then
+ echo "ERROR:No se encuentra la cola buscada"
+exit 3
+fi
+if [ -n "$3" ];then
+if [ "$2" -gt "$3" ];then
+ echo "ERROR:Error de Sintaxis, umbral WARNING debe menor o igual al umbral CRITICAL"
+ echo "$0 $1 $2 $3"
+exit 2
+ fi
+if [ "$llamadas" -ge $2 -a "$llamadas" -lt $3 ];then
+echo "WARNING:$llamadas llamadas en cola|cola=$llamadas"
+exit 2
+fi
+if [ "$llamadas" -ge "$3" ];then
+ echo "CRITICAL:$llamadas llamadas en cola|cola=$llamadas"
+ exit 2
+fi
+elif [ "$llamadas" -ge "$2" ];then
+ echo "WARNING:$llamadas llamadas en cola|cola=$llamadas"
+ exit 2
+fi
+if [ "$llamadas" -lt "$2" ];then
+ echo "OK:$llamadas llamadas en cola|cola=$llamadas"
+ exit 0
+fi
